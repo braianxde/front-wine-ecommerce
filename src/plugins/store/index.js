@@ -4,22 +4,28 @@ import Vuex from "vuex";
 Vue.use(Vuex);
 
 export default new Vuex.Store({
-    state: {
-        test: false
+  state: {
+    purchaseOrder: {
+      items: [],
+      distance: 0
+    }
+  },
+  mutations: {
+    changePurchaseOrder: (state, data) => {
+      console.log("change");
+      state.purchaseOrder = data;
+    }
+  },
+  getters: {
+    getPurchaseOrder: state => {
+      console.log("getter");
+      return state.purchaseOrder;
     },
-    mutations: {
-        changeTest: (state, data) => {
-            state.test = data;
-        }
+  },
+  actions: {
+    changePurchaseOrder: ({commit}, value) => {
+      console.log("commit");
+      commit('changePurchaseOrder', value);
     },
-    getters: {
-        getTest: state => {
-            return state.test;
-        },
-    },
-    actions: {
-        changeTest: ({ commit }, value) => {
-            commit('changeTest', value);
-        },
-    },
+  },
 });
