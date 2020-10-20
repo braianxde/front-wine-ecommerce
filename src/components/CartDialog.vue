@@ -58,7 +58,7 @@
           <footer class="modal-footer">
             <slot name="footer">
               <button type="button" class="btn btn-green" @click="close()" aria-label="Close modal">
-                Fechar
+                Close
               </button>
               <button v-if="distance >0" type="button" class="btn btn-green" @click="checkout()"
                       aria-label="Close modal">
@@ -183,8 +183,14 @@ export default {
       this.products.splice(index, 1);
       let purchaseOrder = JSON.parse(localStorage.getItem("purchaseOrder"));
       purchaseOrder.items = this.products;
+      Vue.toasted.success("Deleted product");
       localStorage.setItem("purchaseOrder", JSON.stringify(purchaseOrder));
       this.changePurchaseOrder(purchaseOrder)
+
+      console.log(this.products);
+      if (this.products.length == 0) {
+        this.close();
+      }
     }
   },
 }

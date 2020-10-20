@@ -41,7 +41,7 @@ export default {
       if (store.state.purchaseOrder.items) {
         let count = 0;
         store.state.purchaseOrder.items.forEach(function (product) {
-          count += product.qty;
+          count +=parseInt(product.qty);
         });
 
         this.itemsCart = count;
