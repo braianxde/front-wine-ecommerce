@@ -1,10 +1,8 @@
 <template>
   <div>
-    <div>
-      <div class="products">
-        <div v-for="product in products" :key="product.id">
-          <Product :product="product" />
-        </div>
+    <div class="products">
+      <div v-for="product in products" :key="product.id">
+        <Product :product="product"/>
       </div>
     </div>
   </div>
@@ -13,9 +11,10 @@
 <script>
 import Product from '@/components/Product.vue';
 import axios from "@/plugins/axios";
+
 export default {
   name: 'Home',
-  components: { Product },
+  components: {Product},
   data() {
     return {
       products: [
@@ -29,7 +28,7 @@ export default {
   methods: {
     async getProducts() {
       try {
-        this.products = await axios.get(`http://172.17.0.1/products`);
+        this.products = await axios.get(`products`);
       } catch (e) {
         console.log(e);
       }

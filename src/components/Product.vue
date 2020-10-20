@@ -7,7 +7,7 @@
       <p class="product-name">{{ nameShort }}</p>
       <p style="margin: 0px; color: black; font-weight: bold">
         <money v-model="product.value" v-bind="money" v-show="false"/>
-        {{ product.value }}
+        $ {{ product.value }}
       </p>
       <button @click="navigateTo(product.id)">
         Detail
@@ -46,7 +46,6 @@ export default {
       money: {
         decimal: '.',
         thousands: '.',
-        prefix: '$ ',
         precision: 2,
         masked: true
       },
@@ -102,7 +101,7 @@ button {
 }
 
 button:hover {
-  background-color: #fafafa;
+  background-color: #850aad;
   color: #000000;
 }
 </style>

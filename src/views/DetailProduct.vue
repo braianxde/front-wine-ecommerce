@@ -9,15 +9,18 @@
       <div>
         <img width="200px" height="300px" :src="product.img">
       </div>
+      <div class="grid-container">
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <money v-model="product.value" v-bind="money" v-show="false"/>
+          <h2><b>Price:</b> $ {{ product.value }}</h2>
+        </div>
+        <div  style="display: flex; align-items: center; justify-content: center;">
+          <h3>Qty: <input v-model="qty" type="number" id="qty"/></h3>
+        </div>
+      </div>
       <div class="description-product">
         <b>Description :</b> <br>
-        {{product.description}}
-      </div>
-      <div>
-        <h4 class="description-product">
-          <money v-model="product.value" v-bind="money" v-show="false"/>
-          <b>Price:</b> {{ product.value }}
-        </h4>
+        {{ product.description }}
       </div>
       <div>
         <button :disabled="disableAddCart" @click="addToPurchaseOrder">Add to Cart</button>
@@ -30,30 +33,30 @@
 import axios from "@/plugins/axios";
 import router from "@/plugins/router";
 import {Money} from 'v-money';
-import { mapActions, mapGetters} from "vuex";
-
+import {mapActions, mapGetters} from "vuex";
+import Vue from "vue";
 export default {
   name: "DetailProduct",
   data() {
     return {
       product: {},
       disableAddCart: false,
+      qty: 1,
       money: {
         decimal: '.',
         thousands: '.',
-        prefix: '$ ',
         precision: 2,
         masked: true
       },
     };
   },
-  components:{
+  components: {
     Money
   },
   async mounted() {
     let idProduct = this.$route.params.id;
     if (idProduct) {
-      let productPromisse = await axios.get("http://172.17.0.1/product/" + idProduct);
+      let productPromisse = await axios.get("product/" + idProduct);
       this.product = await productPromisse[0];
     } else {
       await router.push({path: "/"})
@@ -62,12 +65,32 @@ export default {
   methods: {
     ...mapActions(["changePurchaseOrder"]),
     ...mapGetters(["getPurchaseOrder"]),
-    async addToPurchaseOrder(){
-      let purchaseOrder = await this.getPurchaseOrder();
+    async addToPurchaseOrder() {
+      if(this.qty <= 0 || this.qty > 10){
+        Vue.toasted.error("Enter the quantity (10 Max)");
+        return;
+      }
+
+      let purchaseOrder = JSON.parse(localStorage.getItem("purchaseOrder"));
+
+      if (purchaseOrder == null) {
+        purchaseOrder = {
+          items: [],
+          distance: 0
+        }
+      }
+
+      Vue.toasted.success("Product Added");
+      this.product.qty = this.qty;
       purchaseOrder.items.push(this.product)
-      console.log(purchaseOrder);
+      localStorage.setItem("purchaseOrder", JSON.stringify(purchaseOrder));
       this.changePurchaseOrder(purchaseOrder)
       this.disableAddCart = true;
+
+      setTimeout(()=>{
+        router.push("/");
+      }, 1000)
+
     }
   }
 }
@@ -90,9 +113,24 @@ button {
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
-  margin: 4px 2px;
+  margin: 30px 2px;
   transition-duration: 0.4s;
   cursor: pointer;
+}
+
+input[type=text],input[type=number], select {
+  width: 30%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 20px;
 }
 
 button:hover {

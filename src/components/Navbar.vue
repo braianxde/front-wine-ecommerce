@@ -15,6 +15,7 @@
 import router from "../plugins/router";
 import CartDialog from "@/components/CartDialog";
 import store from "@/plugins/store";
+import Vue from 'vue';
 
 export default {
   name: 'NavBar',
@@ -29,7 +30,7 @@ export default {
   },
   computed: {
     count() {
-      if(store.state.purchaseOrder.items){
+      if (store.state.purchaseOrder.items) {
         return store.state.purchaseOrder.items.length
       }
       return 0;
@@ -37,18 +38,37 @@ export default {
   },
   watch: {
     count() {
-      if(store.state.purchaseOrder.items) {
-        this.itemsCart = store.state.purchaseOrder.items.length
+      if (store.state.purchaseOrder.items) {
+        let count = 0;
+        store.state.purchaseOrder.items.forEach(function (product) {
+          count += product.qty;
+        });
+
+        this.itemsCart = count;
       }
     }
   },
   mounted() {
-    if(store.state.purchaseOrder.items) {
-      this.itemsCart = store.state.purchaseOrder.items.length
+    let purchaseOrder = JSON.parse(localStorage.getItem("purchaseOrder"));
+
+    if (purchaseOrder == null) {
+      purchaseOrder = {
+        items: [],
+        distance: 0
+      }
+      localStorage.setItem("purchaseOrder", JSON.stringify(purchaseOrder));
+    }
+
+    if (purchaseOrder) {
+      this.itemsCart = purchaseOrder.items.length
     }
   },
   methods: {
     openCart() {
+      if(this.itemsCart === 0){
+        Vue.toasted.info("My Cart Empty")
+        return;
+      }
       this.isModalVisible = true;
     },
     closeModal() {
@@ -90,7 +110,7 @@ ul.topnav li a {
 }
 
 ul.topnav li a:hover:not(.active) {
-  background-color: #ba9e9e;
+  background: linear-gradient(rgba(255, 255, 255, .6), rgba(255, 255, 255, .2)), url("../assets/navbar.jpg");
 }
 
 ul.topnav li a.active {

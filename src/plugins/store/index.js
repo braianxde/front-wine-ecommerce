@@ -12,19 +12,16 @@ export default new Vuex.Store({
   },
   mutations: {
     changePurchaseOrder: (state, data) => {
-      console.log("change");
       state.purchaseOrder = data;
     }
   },
   getters: {
     getPurchaseOrder: state => {
-      console.log("getter");
       return state.purchaseOrder;
     },
   },
   actions: {
     changePurchaseOrder: ({commit}, value) => {
-      console.log("commit");
       commit('changePurchaseOrder', value);
     },
   },

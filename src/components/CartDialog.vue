@@ -13,65 +13,178 @@
             </button>
           </slot>
         </header>
+        <div>
+          <section class="modal-body">
+            <slot name="body">
+              <table style="background-color: white">
+                <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Unit Weight</th>
+                  <th>Unit Price</th>
+                  <th>Quantity</th>
+                  <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(product,index) in products"
+                    :key="index">
+                  <td>{{ product.name }}</td>
+                  <td>{{ product.weight }}</td>
+                  <td>$ {{ product.value }}</td>
+                  <td>
+                    <input class="inputWine" v-on:input="changeDistance()" v-model="product.qty" type="number"
+                           id="qty"/>
+                  </td>
+                  <td style="color: red" @click="deleteProduct(index)">Delete</td>
+                </tr>
+                </tbody>
+              </table>
+            </slot>
+          </section>
+          <div class="fieldFormWine">
+            Distance: <input class="inputWine" v-on:input="changeDistance()" v-model="distance" type="number"
+                             id="distance"/>
+          </div>
 
-        <section class="modal-body">
-          <slot name="body">
-            <table style="background-color: white">
-              <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>weight</th>
-                <th>Price</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="(product,index) in products"
-                  :key="index">
-                <td>{{product.id}}</td>
-                <td>{{product.name}}</td>
-                <td>{{product.weight}}</td>
-                <td>{{product.value}}</td>
-                <td style="color: red" @click="deleteProduct(index)">Delete</td>
-              </tr>
-              </tbody>
-            </table>
-          </slot>
-        </section>
+          <div class="fieldFormWine" v-if="distance >0">
+            Shipping Costs: $ {{ shippingCostFormated }}
+          </div>
 
-        <footer class="modal-footer">
-          <slot name="footer">
-            <button type="button" class="btn btn-green" @click="close" aria-label="Close modal">
-              Close me!
-            </button>
-          </slot>
-        </footer>
+          <div class="fieldFormWine" v-if="distance >0">
+            Total Price: $ {{ totalValueFormated }}
+          </div>
+
+          <footer class="modal-footer">
+            <slot name="footer">
+              <button type="button" class="btn btn-green" @click="close()" aria-label="Close modal">
+                Fechar
+              </button>
+              <button v-if="distance >0" type="button" class="btn btn-green" @click="checkout()"
+                      aria-label="Close modal">
+                Checkout
+              </button>
+            </slot>
+          </footer>
+        </div>
       </div>
     </div>
   </transition>
 </template>
 <script>
+import {mapActions} from "vuex";
 import store from "@/plugins/store";
-import { mapActions } from "vuex";
+import Vue from "vue";
+import axios from "@/plugins/axios";
+import Util from "@/plugins/Util";
+
 export default {
   name: 'CartDialog',
   mounted() {
-    this.products = store.state.purchaseOrder.items;
-    console.log(this.products);
+    let purchaseOrder = JSON.parse(localStorage.getItem("purchaseOrder"));
+    this.products = purchaseOrder.items;
   },
   data() {
     return {
       products: {},
+      distance: "",
+      totalValue: "",
+      totalValueFormated: "",
+      shippingCost: "",
+      shippingCostFormated: ""
     };
+  },
+  computed: {
+    count() {
+      if (store.state.purchaseOrder.items) {
+        return store.state.purchaseOrder.items.length
+      }
+      return 0;
+    }
+  },
+  watch: {
+    count() {
+      if (store.state.purchaseOrder.items) {
+        let purchaseOrder = JSON.parse(localStorage.getItem("purchaseOrder"));
+        this.products = purchaseOrder.items;
+      }
+    }
   },
   methods: {
     ...mapActions(["changePurchaseOrder"]),
+    async checkout() {
+      if (this.distance == "" || this.distance <= 0) {
+        Vue.toasted.error("Report the Distance:");
+      }
+
+      let purchaseOrder = {
+        items: [],
+        distance: this.distance
+      };
+
+      this.products.forEach(function (product) {
+        for (let index = 1; index <= product.qty; index++) {
+          purchaseOrder.items.push(product);
+        }
+      });
+
+      let response = await axios.post(`purchase-order`, purchaseOrder)
+
+      if (response) {
+        Vue.toasted.success("Purchase successfully registered")
+        this.changePurchaseOrder({items: [], distance: 0});
+        localStorage.removeItem("purchaseOrder");
+        this.products = {};
+        this.$emit('close');
+      } else {
+        Vue.toasted.success("Try again later");
+      }
+    },
     close() {
+      this.resetData();
       this.$emit('close');
     },
-    async deleteProduct(index){
+    resetData() {
+      this.distance = "";
+      this.totalValue = "";
+      this.totalValueFormated = "";
+      this.shippingCost = "";
+      this.shippingCostFormated = "";
+    },
+    changeDistance() {
+      let sumWeight = 0;
+      let sumValue = 0;
+
+      this.products.forEach(function (product) {
+        if (product.qty <= 0) {
+          product.qty = 1;
+        }
+
+        if (product.qty > 10) {
+          product.qty = 10;
+        }
+        sumWeight += parseFloat(product.weight * product.qty);
+        sumValue += parseFloat(product.value * product.qty);
+      });
+
+      let shippingWeight = sumWeight * 5;
+
+      if (this.distance <= 100) {
+        this.shippingCostFormated = Util.formatMoneyUSD(shippingWeight);
+        this.shippingCost = shippingWeight;
+      } else {
+        this.shippingCostFormated = Util.formatMoneyUSD((shippingWeight * this.distance) / 100);
+        this.shippingCost = (shippingWeight * this.distance) / 100;
+      }
+
+      this.totalValueFormated = Util.formatMoneyUSD(sumValue + this.shippingCost);
+    },
+    async deleteProduct(index) {
       this.products.splice(index, 1);
-      await this.changePurchaseOrder(this.products)
+      let purchaseOrder = JSON.parse(localStorage.getItem("purchaseOrder"));
+      purchaseOrder.items = this.products;
+      localStorage.setItem("purchaseOrder", JSON.stringify(purchaseOrder));
+      this.changePurchaseOrder(purchaseOrder)
     }
   },
 }
@@ -80,9 +193,24 @@ export default {
 
 .btn {
   padding: 8px 16px;
-  border-radius: 3px;
   font-size: 14px;
   cursor: pointer;
+  color: white;
+  margin-left: 50px;
+  background: #5f1686;
+  border: 1px solid #010706;
+  border-radius: 2px;
+}
+
+.no-product {
+  width: 250px;
+  height: 250px;
+  align-items: center;
+  display: flex;
+  font-weight: bold;
+  font-size: 20px;
+  align-content: center;
+  padding-left: 90px;
 }
 
 .modal-backdrop {
@@ -102,7 +230,25 @@ export default {
   box-shadow: 2px 2px 20px 1px;
   overflow-x: auto;
   display: flex;
+  border-radius: 15px;
   flex-direction: column;
+}
+
+.inputWine {
+  width: 50%;
+  display: inline-block;
+  border: 1px solid #ccc;
+  height: 20px;
+  padding: 12px 20px;
+  border-radius: 4px;
+}
+
+.fieldFormWine {
+  padding-left: 15px;
+  text-align: left;
+  font-weight: bold;
+  max-width: 300px;
+  margin-bottom: 20px
 }
 
 .modal-header,
@@ -119,7 +265,7 @@ export default {
 
 .modal-footer {
   border-top: 1px solid #eeeeee;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .modal-body {
@@ -135,13 +281,6 @@ export default {
   font-weight: bold;
   color: #4aae9b;
   background: transparent;
-}
-
-.btn {
-  color: white;
-  background: #5f1686;
-  border: 1px solid #010706;
-  border-radius: 2px;
 }
 
 .modal-fade-enter,
@@ -170,7 +309,11 @@ th {
   color: white;
 }
 
-tr:nth-child(even) {background-color: #f2f2f2;}
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
 
-tr:hover {background-color: #e0c7c7;}
+tr:hover {
+  background-color: #e0c7c7;
+}
 </style>

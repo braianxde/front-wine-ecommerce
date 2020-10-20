@@ -114,8 +114,9 @@ export default {
     },
     async onSubmitForm(){
       if(this.checkForm()){
-        let response = await axios.post(`http://172.17.0.1/product`, this.product)
+        let response = await axios.post(`product`, this.product)
         if(response){
+          this.product = {};
           Vue.toasted.success("Wine successfully registered")
         }
       }
@@ -126,7 +127,7 @@ export default {
 
 <style scoped>
 input[type=text],input[type=number], select {
-  width: 100%;
+  width: 87%;
   padding: 12px 20px;
   margin: 8px 0;
   display: inline-block;

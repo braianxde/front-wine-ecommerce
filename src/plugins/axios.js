@@ -4,6 +4,8 @@ import Vue from "vue";
 export default class ApiService {
   static async get(endpoint) {
     try {
+      endpoint = process.env.VUE_APP_API_ENDPOINT + endpoint;
+
       const request = await axios.get(endpoint, this.mountHeaders())
         .catch(error => {
           Vue.toasted.error('Something goes wrong webservice');
@@ -26,6 +28,8 @@ export default class ApiService {
 
   static async post(endpoint, body) {
     try {
+      endpoint = process.env.VUE_APP_API_ENDPOINT + endpoint;
+
       const request = await axios.post(
         endpoint,
         body,
